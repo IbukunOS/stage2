@@ -3,6 +3,7 @@ version: '3.8'
 services:
   app:
     build: .
+    restart: always
     volumes:
       - ./backups:/app/backups
     environment:
@@ -12,17 +13,27 @@ services:
       - mongodb
     networks:
       - app-network
+    deploy:
+      resources:
+        limits:
+           memory: 256M
 
   mongodb:
     image: mongo:latest
+    restart: always
     volumes:
       - mongodb_data:/data/db
       - ./backups:/backups
     networks:
       - app-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   nginx:
     image: nginx:latest
+    restart: always
     ports:
       - "80:80"
       - "443:443"
@@ -33,10 +44,13 @@ services:
       - app
     networks:
       - app-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
 
 networks:
   app-network:
     driver: bridge
 
 volumes:
-  mongodb_data:

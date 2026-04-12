@@ -1,8 +1,42 @@
+version: '3.8'
+
 services:
-  stage2:
-    image: stage2
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+  app:
+    build: .
+    volumes:
+      - ./backups:/app/backups
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/remotehustle
+      - SECRET_KEY=your_secret_key
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:latest
+    volumes:
+      - mongodb_data:/data/db
+      - ./backups:/backups
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:latest
     ports:
-      - 5002:5002
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/nginx/certs
+    depends_on:
+      - app
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
