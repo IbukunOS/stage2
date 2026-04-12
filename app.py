@@ -2,7 +2,8 @@ import os
 import random
 import string
 import datetime
-from flask import Flask, jsonify, request, render_template, redirect, url_for, flash
+import subprocess
+from flask import Flask, jsonify, request, render_template, redirect, url_for, flash, send_from_directory
 from flask_pymongo import PyMongo
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -14,7 +15,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'supersecretkey')
 app.config["MONGO_URI"] = os.environ.get('MONGO_URI', "mongodb://mongodb:27017/remotehustle")
 mongo = PyMongo(app)
 
-# Simple User Role management (Mock Database for simplicity in this stage)
+# Simple User Role management
 USERS = {
     "admin": {
         "password": generate_password_hash("admin123"),
@@ -48,8 +49,11 @@ def index():
 @app.route('/api/data', methods=['GET'])
 @login_required()
 def get_data():
-    data = list(mongo.db.items.find({}, {'_id': 0}))
-    return jsonify(data)
+    try:
+        data = list(mongo.db.items.find({}, {'_id': 0}))
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/generate', methods=['POST'])
 @login_required('admin')
@@ -72,15 +76,49 @@ def generate_data():
         
         return jsonify({"message": f"Generated {count} items", "count": count})
     except Exception as e:
-        app.logger.error(f"Error generating data: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/backup/status', methods=['GET'])
 @login_required('admin')
 def backup_status():
     backup_dir = "/app/backups"
-    backups = os.listdir(backup_dir) if os.path.exists(backup_dir) else []
-    return jsonify({"backup_count": len(backups), "backups": sorted(backups)})
+    if not os.path.exists(backup_dir):
+        os.makedirs(backup_dir)
+    backups = [f for f in os.listdir(backup_dir) if f.endswith(".gz")]
+    return jsonify({"backup_count": len(backups), "backups": sorted(backups, reverse=True)})
+
+@app.route('/api/backup/download/<filename>', methods=['GET'])
+@login_required('admin')
+def download_backup(filename):
+    backup_dir = "/app/backups"
+    return send_from_directory(backup_dir, filename, as_attachment=True)
+
+@app.route('/api/backup/restore/<filename>', methods=['POST'])
+@login_required('admin')
+def restore_backup(filename):
+    backup_path = os.path.join("/app/backups", filename)
+    if not os.path.exists(backup_path):
+        return jsonify({"error": "Backup file not found"}), 404
+    
+    try:
+        cmd = ["python", "scripts/restore.py", backup_path]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            return jsonify({"message": f"Successfully restored from {filename}", "output": result.stdout})
+        else:
+            return jsonify({"error": "Restore failed", "details": result.stderr}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/backup/run', methods=['POST'])
+@login_required('admin')
+def run_backup_now():
+    try:
+        cmd = ["python", "scripts/backup.py"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        return jsonify({"message": "Manual backup triggered", "output": result.stdout})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
