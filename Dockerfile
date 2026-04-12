@@ -2,16 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies and MongoDB Tools directly from repo
-# This is lighter than pulling a 700MB mongo:latest image
+# Install dependencies and MongoDB Tools directly via .deb package
+# This bypasses the repository signature issues in newer Debian versions
 RUN apt-get update && apt-get install -y \
     wget \
-    gnupg \
     cron \
-    && wget -qO- https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg \
-    && echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list \
-    && apt-get update && apt-get install -y \
-    mongodb-database-tools \
+    && wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-debian12-x86_64-100.9.4.deb \
+    && apt-get install -y ./mongodb-database-tools-debian12-x86_64-100.9.4.deb \
+    && rm mongodb-database-tools-debian12-x86_64-100.9.4.deb \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
