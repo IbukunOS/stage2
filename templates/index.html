@@ -24,6 +24,15 @@
         <h1>Remote Hustle Infrastructure Hub</h1>
         <p>This is a live deployment to demonstrate infrastructure capabilities.</p>
         
+        <div class="section" id="login-section" style="background: #fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeeba;">
+            <h2>Session Authentication</h2>
+            <p>Log in to test role-based access control (RBAC).</p>
+            <input type="text" id="username" placeholder="Username" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            <input type="password" id="password" placeholder="Password" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            <button class="btn btn-blue" onclick="setCredentials()" style="margin-bottom: 0;">Set Session Role</button>
+            <p id="auth-status" style="margin-top: 10px; font-weight: bold; color: #856404;">Currently acting as: Guest (Unauthorized)</p>
+        </div>
+
         <div class="section">
             <h2>Data Management</h2>
             <button class="btn btn-green" onclick="generateData()">Generate 10 Random Items</button>
@@ -56,28 +65,58 @@
     </div>
 
     <script>
-        const adminAuth = 'Basic ' + btoa('admin:admin123');
-        const staffAuth = 'Basic ' + btoa('staff:staff123');
+        let currentAuth = null;
+        let currentRole = "Guest";
+
+        function setCredentials() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            if (!user || !pass) {
+                alert("Please enter both username and password.");
+                return;
+            }
+            currentAuth = 'Basic ' + btoa(user + ':' + pass);
+            currentRole = user;
+            document.getElementById('auth-status').innerText = `Currently acting as: ${user}`;
+            document.getElementById('auth-status').style.color = "#155724";
+            fetchBackupStatus(); // Refresh to check if we have access
+        }
+
+        async function handleResponse(response) {
+            if (response.status === 401) {
+                alert("Error: Unauthorized. Please set valid credentials.");
+                return null;
+            }
+            if (response.status === 403) {
+                alert("Error: Forbidden. Your role does not have permission for this action.");
+                return null;
+            }
+            return await response.json();
+        }
 
         async function generateData() {
             try {
                 const response = await fetch('/api/generate?count=10', {
                     method: 'POST',
-                    headers: { 'Authorization': adminAuth }
+                    headers: { 'Authorization': currentAuth }
                 });
-                const result = await response.json();
-                alert(result.message || result.error);
-                fetchData();
+                const result = await handleResponse(response);
+                if (result) {
+                    alert(result.message || result.error);
+                    fetchData();
+                }
             } catch (err) { alert("Error: " + err.message); }
         }
 
         async function fetchData() {
             try {
                 const response = await fetch('/api/data', {
-                    headers: { 'Authorization': staffAuth }
+                    headers: { 'Authorization': currentAuth }
                 });
-                const result = await response.json();
-                document.getElementById('data-display').innerText = JSON.stringify(result, null, 2);
+                const result = await handleResponse(response);
+                if (result) {
+                    document.getElementById('data-display').innerText = JSON.stringify(result, null, 2);
+                }
             } catch (err) { alert("Error: " + err.message); }
         }
 
@@ -85,20 +124,24 @@
             try {
                 const response = await fetch('/api/backup/run', {
                     method: 'POST',
-                    headers: { 'Authorization': adminAuth }
+                    headers: { 'Authorization': currentAuth }
                 });
-                const result = await response.json();
-                alert(result.message || result.error);
-                fetchBackupStatus();
+                const result = await handleResponse(response);
+                if (result) {
+                    alert(result.message || result.error);
+                    fetchBackupStatus();
+                }
             } catch (err) { alert("Error: " + err.message); }
         }
 
         async function fetchBackupStatus() {
             try {
                 const response = await fetch('/api/backup/status', {
-                    headers: { 'Authorization': adminAuth }
+                    headers: { 'Authorization': currentAuth }
                 });
-                const result = await response.json();
+                const result = await handleResponse(response);
+                if (!result) return;
+
                 const list = document.getElementById('backup-list');
                 list.innerHTML = '';
                 result.backups.forEach(file => {
@@ -111,10 +154,13 @@
                     </tr>`;
                     list.innerHTML += row;
                 });
-            } catch (err) { alert("Error: " + err.message); }
+            } catch (err) { console.log("Backup status failed (likely guest)"); }
         }
 
         function downloadBackup(file) {
+            if (!currentAuth) { alert("Please log in first."); return; }
+            // To handle basic auth for a direct download, we use a trick or just open the link
+            // Browser might prompt for credentials if not already cached
             window.open(`/api/backup/download/${file}`, '_blank');
         }
 
@@ -123,16 +169,15 @@
             try {
                 const response = await fetch(`/api/backup/restore/${file}`, {
                     method: 'POST',
-                    headers: { 'Authorization': adminAuth }
+                    headers: { 'Authorization': currentAuth }
                 });
-                const result = await response.json();
-                alert(result.message || result.error);
-                fetchData();
+                const result = await handleResponse(response);
+                if (result) {
+                    alert(result.message || result.error);
+                    fetchData();
+                }
             } catch (err) { alert("Error: " + err.message); }
         }
-
-        // Initial load
-        fetchBackupStatus();
     </script>
 </body>
 </html>

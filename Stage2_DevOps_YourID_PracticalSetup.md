@@ -11,7 +11,8 @@
 ### Hosting Environment
 *   **Provider:** AWS EC2
 *   **Instance Type:** t2.micro (Ubuntu 22.04 LTS)
-*   **Infrastructure:** Dockerized environment (Nginx + Flask + MongoDB)
+*   **Infrastructure:** Dockerized environment (Nginx + Flask + MongoDB 4.4)
+*   **Optimization:** Added 2GB Swap space for t2.micro build stability.
 
 ### Deployment Method: GitHub Actions (Auto-Deploy)
 We implemented a CI/CD pipeline using GitHub Actions that automatically deploys code to the EC2 instance upon pushing to the `main` branch.
@@ -32,7 +33,7 @@ We implemented a CI/CD pipeline using GitHub Actions that automatically deploys 
 ## 2. Backup Implementation
 
 ### Backup Configuration
-*   **Type:** Daily Automated Database Backups (MongoDB).
+*   **Type:** Daily Automated & Manual Database Backups (MongoDB).
 *   **Mechanism:** A Cron job runs inside the `app` container every midnight.
 *   **Script:** `scripts/backup.py` uses `mongodump` with Gzip compression.
 *   **Storage:** Backups are stored in a private directory `/app/backups`, which is mounted to a host volume `./backups` for persistence.
@@ -40,17 +41,15 @@ We implemented a CI/CD pipeline using GitHub Actions that automatically deploys 
 ### Recovery & Testing
 The system includes a manual restore feature to verify backup integrity.
 *   **Restore Script:** `scripts/restore.py` uses `mongorestore` with the `--drop` flag to ensure a clean state.
-*   **Verification:**
-    1.  Generate random data in the UI.
-    2.  Trigger a "Manual Backup".
-    3.  Delete data or modify it.
-    4.  Click "Restore" on the backup list.
-    5.  Refresh data to confirm recovery.
+*   **UI Features:**
+    1.  **Manual Backup:** Trigger a snapshot instantly from the UI.
+    2.  **Download:** Save `.gz` backups locally for off-site storage.
+    3.  **Restore:** Select a backup and click "Restore" to overwrite the current database.
 
 ### Screenshot Deliverables (How to obtain)
-1.  **Backup Config:** Show `docker-compose.yml` volumes and `Dockerfile` cron lines.
-2.  **Backup List:** Screenshot the "Backup & Recovery" section of the live website.
-3.  **Restore Success:** Screenshot the "Successfully restored" alert message in the browser.
+1.  **Backup Config:** Show `docker-compose.yml` volumes and the cron job in `Dockerfile`.
+2.  **Backup List:** Screenshot the "Backup & Recovery" table in the live UI.
+3.  **Restore Success:** Screenshot the "Successfully restored" alert message after clicking Restore.
 
 ---
 
@@ -61,12 +60,12 @@ The system includes a manual restore feature to verify backup integrity.
 *   **Encryption:** 2048-bit RSA key.
 *   **Nginx Config:** Nginx is configured to redirect all HTTP traffic (Port 80) to HTTPS (Port 443).
 
-### Access Control & User Roles
-*   **Authentication:** Basic Auth implemented at the application level.
+### Access Control & User Roles (RBAC)
+*   **Authentication:** Session-based Basic Auth via UI login box.
 *   **Roles:**
     *   `admin`: Full access (Generate Data, Manual Backup, Restore, Download).
     *   `staff`: Read-only access (View Data only).
-*   **Password Security:** Passwords are salted and hashed using `pbkdf2:sha256` via `werkzeug.security`.
+*   **Security:** Unauthorized actions (e.g., Guest trying to Backup) are rejected with a 401/403 status.
 
 ### Firewall & Network Security
 *   **AWS Security Group:** Only ports 22 (SSH), 80 (HTTP), and 443 (HTTPS) are open.
@@ -77,11 +76,11 @@ The system includes a manual restore feature to verify backup integrity.
 ## 4. Usage Instructions
 
 1.  **Access:** Open `http://<EC2_IP>`. You will be redirected to HTTPS.
-2.  **Login:** Enter `admin` / `admin123` to manage the system.
+2.  **Login:** Enter `admin` / `admin123` in the Session Authentication box and click "Set Session Role".
 3.  **Generate:** Click "Generate 10 Random Items" to populate the database.
 4.  **Backup:** Click "Run Manual Backup" to create a timestamped snapshot.
-5.  **Restore:** Select a backup from the list and click "Restore" to revert to that state.
-6.  **Download:** Click "Download" to save the backup `.gz` file locally for off-site storage.
+5.  **Download:** Click "Download" to save a backup `.gz` file locally.
+6.  **Restore:** Select a backup from the list and click "Restore" to revert to that state.
 
 ---
 
