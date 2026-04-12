@@ -3,20 +3,96 @@
 <head>
     <title>Remote Hustle - System Status</title>
     <style>
-        body { font-family: sans-serif; margin: 2rem; background-color: #f4f4f4; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        .role-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; background: #e0e0e0; margin-left: 10px; }
-        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; background-color: #28a745; color: white; }
-        .btn:hover { background-color: #218838; }
-        .section { margin-top: 20px; border-top: 1px solid #ddd; padding-top: 10px; }
-        pre { background: #eee; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        body { 
+            font-family: 'Courier New', monospace; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #0a0a0a; 
+            color: #00ff00; 
+        }
+        .header { 
+            background-color: #1a1a1a; 
+            padding: 20px; 
+            text-align: center; 
+            border-bottom: 2px solid #00ff00; 
+            box-shadow: 0 0 10px #00ff00; 
+        }
+        .header h1 { 
+            margin: 0; 
+            font-size: 2.5em; 
+            text-shadow: 0 0 10px #00ff00; 
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 20px auto; 
+            background: #1a1a1a; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 0 20px rgba(0,255,0,0.3); 
+            border: 1px solid #00ff00; 
+        }
+        h1 { color: #00ff00; }
+        h2 { color: #00ff00; border-bottom: 1px solid #00ff00; padding-bottom: 5px; }
+        .role-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; background: #333; color: #00ff00; margin-left: 10px; border: 1px solid #00ff00; }
+        .btn { 
+            padding: 10px 20px; 
+            border: 1px solid #00ff00; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            background-color: #1a1a1a; 
+            color: #00ff00; 
+            font-family: 'Courier New', monospace; 
+            transition: all 0.3s; 
+        }
+        .btn:hover { 
+            background-color: #00ff00; 
+            color: #0a0a0a; 
+            box-shadow: 0 0 10px #00ff00; 
+        }
+        .section { 
+            margin-top: 30px; 
+            border-top: 1px solid #333; 
+            padding-top: 20px; 
+        }
+        pre { 
+            background: #0a0a0a; 
+            color: #00ff00; 
+            padding: 15px; 
+            border-radius: 5px; 
+            overflow-x: auto; 
+            border: 1px solid #00ff00; 
+            font-family: 'Courier New', monospace; 
+        }
+        p { color: #cccccc; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="header">
         <h1>Remote Hustle Infrastructure Hub</h1>
+        <p>Live Deployment - System Status Dashboard</p>
+    </div>
+    <div class="container">
         <p>This is a live deployment to demonstrate infrastructure capabilities.</p>
+        
+        <div class="section">
+            <h2>Data Generation (Simulate Activity)</h2>
+            <p>Generate random data to showcase database backups and restores.</p>
+            <button class="btn" onclick="generateData()">Generate 10 Random Items</button>
+            <button class="btn" onclick="fetchData()">View Current Data</button>
+        </div>
+
+        <div class="section">
+            <h2>Live Data (MongoDB)</h2>
+            <pre id="data-display">Click 'View Current Data' to load...</pre>
+        </div>
+
+        <div class="section">
+            <h2>Backup Status</h2>
+            <p>Backups are automated and stored in a private directory on the server.</p>
+            <button class="btn" onclick="fetchBackupStatus()">Check Backup Files</button>
+            <pre id="backup-display">Wait for status...</pre>
+        </div>
+    </div>
         
         <div class="section">
             <h2>Data Generation (Simulate Activity)</h2>

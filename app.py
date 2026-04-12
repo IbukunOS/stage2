@@ -54,22 +54,26 @@ def get_data():
 @app.route('/api/generate', methods=['POST'])
 @login_required('admin')
 def generate_data():
-    count = int(request.args.get('count', 10))
-    new_items = []
-    for _ in range(count):
-        item = {
-            "id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
-            "name": f"Item_{random.randint(1000, 9999)}",
-            "timestamp": datetime.datetime.now().isoformat(),
-            "status": random.choice(["active", "pending", "completed"]),
-            "value": round(random.uniform(10.0, 500.0), 2)
-        }
-        new_items.append(item)
-    
-    if new_items:
-        mongo.db.items.insert_many(new_items)
-    
-    return jsonify({"message": f"Generated {count} items", "count": count})
+    try:
+        count = int(request.args.get('count', 10))
+        new_items = []
+        for _ in range(count):
+            item = {
+                "id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
+                "name": f"Item_{random.randint(1000, 9999)}",
+                "timestamp": datetime.datetime.now().isoformat(),
+                "status": random.choice(["active", "pending", "completed"]),
+                "value": round(random.uniform(10.0, 500.0), 2)
+            }
+            new_items.append(item)
+        
+        if new_items:
+            mongo.db.items.insert_many(new_items)
+        
+        return jsonify({"message": f"Generated {count} items", "count": count})
+    except Exception as e:
+        app.logger.error(f"Error generating data: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/backup/status', methods=['GET'])
 @login_required('admin')
