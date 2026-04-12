@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Remote Hustle - System Status</title>
+    <style>
+        body { font-family: sans-serif; margin: 2rem; background-color: #f4f4f4; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        .role-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; background: #e0e0e0; margin-left: 10px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; background-color: #28a745; color: white; }
+        .btn:hover { background-color: #218838; }
+        .section { margin-top: 20px; border-top: 1px solid #ddd; padding-top: 10px; }
+        pre { background: #eee; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Remote Hustle Infrastructure Hub</h1>
+        <p>This is a live deployment to demonstrate infrastructure capabilities.</p>
+        
+        <div class="section">
+            <h2>Data Generation (Simulate Activity)</h2>
+            <p>Generate random data to showcase database backups and restores.</p>
+            <button class="btn" onclick="generateData()">Generate 10 Random Items</button>
+            <button class="btn" style="background-color: #007bff;" onclick="fetchData()">View Current Data</button>
+        </div>
+
+        <div class="section">
+            <h2>Live Data (MongoDB)</h2>
+            <pre id="data-display">Click 'View Current Data' to load...</pre>
+        </div>
+
+        <div class="section">
+            <h2>Backup Status</h2>
+            <p>Backups are automated and stored in a private directory on the server.</p>
+            <button class="btn" style="background-color: #17a2b8;" onclick="fetchBackupStatus()">Check Backup Files</button>
+            <pre id="backup-display">Wait for status...</pre>
+        </div>
+    </div>
+
+    <script>
+        async function generateData() {
+            const count = 10;
+            try {
+                const response = await fetch(`/api/generate?count=${count}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Basic ' + btoa('admin:admin123') }
+                });
+                const result = await response.json();
+                alert(result.message);
+                fetchData();
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch('/api/data', {
+                    headers: { 'Authorization': 'Basic ' + btoa('staff:staff123') }
+                });
+                const result = await response.json();
+                document.getElementById('data-display').innerText = JSON.stringify(result, null, 2);
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        }
+
+        async function fetchBackupStatus() {
+            try {
+                const response = await fetch('/api/backup/status', {
+                    headers: { 'Authorization': 'Basic ' + btoa('admin:admin123') }
+                });
+                const result = await response.json();
+                document.getElementById('backup-display').innerText = JSON.stringify(result, null, 2);
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        }
+    </script>
+</body>
+</html>
