@@ -16,7 +16,7 @@ services:
     deploy:
       resources:
         limits:
-           memory: 256M
+          memory: 256M
 
   mongodb:
     image: mongo:latest
@@ -54,3 +54,4 @@ networks:
     driver: bridge
 
 volumes:
+  mongodb_data: {}
