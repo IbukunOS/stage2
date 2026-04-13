@@ -19,19 +19,42 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
+
             # Create project directory if it doesn't exist
             mkdir -p ~/remote-hustle-stage2
             cd ~/remote-hustle-stage2
-            
+
             # If git repo doesn't exist, clone it. Otherwise, pull.
             if [ ! -d .git ]; then
               git clone https://github.com/${{ github.repository }}.git .
             else
-              git pull origin main
+              git fetch origin main
+              git reset --hard origin/main
             fi
-            
+
             # Ensure backup directory exists on host
             mkdir -p backups
-            
-            # Run docker compose (v2)
-            docker compose up -d --build
+
+            # Install compose plugin if missing.
+            if ! docker compose version >/dev/null 2>&1; then
+              sudo -n apt-get update
+              sudo -n apt-get install -y docker-compose-plugin
+            fi
+
+            # Fallback to sudo docker if user lacks docker socket access.
+            if docker info >/dev/null 2>&1; then
+              DOCKER="docker"
+            elif sudo -n docker info >/dev/null 2>&1; then
+              DOCKER="sudo docker"
+            else
+              echo "ERROR: Docker daemon is not accessible for this user."
+              exit 1
+            fi
+
+            # Clear stale containers before recreate to avoid legacy metadata issues.
+            $DOCKER compose down --remove-orphans || true
+
+            # Rebuild and recreate services.
+            $DOCKER compose up -d --build --force-recreate
+            $DOCKER compose ps

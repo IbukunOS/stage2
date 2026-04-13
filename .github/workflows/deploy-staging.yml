@@ -19,6 +19,32 @@ jobs:
           username: ${{ secrets.STAGING_USERNAME }}
           key: ${{ secrets.STAGING_SSH_KEY }}
           script: |
+            set -e
+
+            mkdir -p ~/remote-hustle-staging
             cd ~/remote-hustle-staging
-            git pull origin staging
-            docker-compose -p remotehustle_staging up -d --build
+
+            if [ ! -d .git ]; then
+              git clone https://github.com/${{ github.repository }}.git .
+            else
+              git fetch origin staging
+              git reset --hard origin/staging
+            fi
+
+            if ! docker compose version >/dev/null 2>&1; then
+              sudo -n apt-get update
+              sudo -n apt-get install -y docker-compose-plugin
+            fi
+
+            if docker info >/dev/null 2>&1; then
+              DOCKER="docker"
+            elif sudo -n docker info >/dev/null 2>&1; then
+              DOCKER="sudo docker"
+            else
+              echo "ERROR: Docker daemon is not accessible for this user."
+              exit 1
+            fi
+
+            $DOCKER compose -p remotehustle_staging down --remove-orphans || true
+            $DOCKER compose -p remotehustle_staging up -d --build --force-recreate
+            $DOCKER compose -p remotehustle_staging ps
