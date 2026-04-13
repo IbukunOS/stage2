@@ -12,12 +12,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Preflight SSH Reachability
+        env:
+          TARGET_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          set -e
+
+          HOST="$(echo "$TARGET_HOST" | tr -d '[:space:]')"
+          if [ -z "$HOST" ]; then
+            echo "ERROR: EC2_HOST secret is empty."
+            exit 1
+          fi
+
+          # Test TCP connectivity to SSH port before invoking ssh-action.
+          if ! timeout 10 bash -c "cat < /dev/null > /dev/tcp/$HOST/22" 2>/dev/null; then
+            echo "ERROR: Cannot reach $HOST:22 from GitHub runner."
+            echo "Check EC2 state, public host/IP in EC2_HOST, security group inbound rule for TCP 22, and NACL/UFW."
+            exit 1
+          fi
+
+          echo "SSH port is reachable on $HOST:22"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          timeout: 90s
+          command_timeout: 15m
           script: |
             set -e
 
