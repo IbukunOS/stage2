@@ -16,18 +16,18 @@ jobs:
         env:
           TARGET_HOST: ${{ secrets.STAGING_HOST }}
         run: |
-          set -e
+          set +e
 
-          HOST="$(echo "$TARGET_HOST" | tr -d '[:space:]')"
+          HOST="$(printf '%s' "$TARGET_HOST" | tr -d '[:space:]')"
           if [ -z "$HOST" ]; then
-            echo "ERROR: STAGING_HOST secret is empty."
-            exit 1
+            echo "WARNING: STAGING_HOST secret is empty or malformed. Continuing to ssh-action for definitive error output."
+            exit 0
           fi
 
           if ! timeout 10 bash -c "cat < /dev/null > /dev/tcp/$HOST/22" 2>/dev/null; then
-            echo "ERROR: Cannot reach $HOST:22 from GitHub runner."
-            echo "Check EC2 state, public host/IP in STAGING_HOST, security group inbound rule for TCP 22, and NACL/UFW."
-            exit 1
+            echo "WARNING: Preflight could not confirm reachability to :22 from this runner."
+            echo "Proceeding to ssh-action; if it fails, check STAGING_HOST formatting, security group/NACL/UFW, and potential fail2ban blocks."
+            exit 0
           fi
 
           echo "SSH port is reachable on $HOST:22"
@@ -40,6 +40,7 @@ jobs:
           key: ${{ secrets.STAGING_SSH_KEY }}
           timeout: 90s
           command_timeout: 15m
+          debug: true
           script: |
             set -e
 
