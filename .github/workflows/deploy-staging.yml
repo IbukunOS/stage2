@@ -56,7 +56,9 @@ jobs:
 
             if ! docker compose version >/dev/null 2>&1; then
               sudo -n apt-get update
-              sudo -n apt-get install -y docker-compose-plugin
+              if ! sudo -n apt-get install -y docker-compose-plugin; then
+                sudo -n apt-get install -y docker-compose-v2
+              fi
             fi
 
             if docker info >/dev/null 2>&1; then

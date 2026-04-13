@@ -63,7 +63,9 @@ jobs:
             # Install compose plugin if missing.
             if ! docker compose version >/dev/null 2>&1; then
               sudo -n apt-get update
-              sudo -n apt-get install -y docker-compose-plugin
+              if ! sudo -n apt-get install -y docker-compose-plugin; then
+                sudo -n apt-get install -y docker-compose-v2
+              fi
             fi
 
             # Fallback to sudo docker if user lacks docker socket access.
