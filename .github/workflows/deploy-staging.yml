@@ -71,5 +71,15 @@ jobs:
             fi
 
             $DOCKER compose -p remotehustle_staging down --remove-orphans || true
+
+            # Free disk space on small instances (safe: does not prune named volumes).
+            $DOCKER system df || true
+            $DOCKER builder prune -af || true
+            $DOCKER image prune -af || true
+            $DOCKER container prune -f || true
+            $DOCKER network prune -f || true
+            sudo -n apt-get clean || true
+            $DOCKER system df || true
+
             $DOCKER compose -p remotehustle_staging up -d --build --force-recreate
             $DOCKER compose -p remotehustle_staging ps

@@ -81,6 +81,15 @@ jobs:
             # Clear stale containers before recreate to avoid legacy metadata issues.
             $DOCKER compose down --remove-orphans || true
 
+            # Free disk space on small instances (safe: does not prune named volumes).
+            $DOCKER system df || true
+            $DOCKER builder prune -af || true
+            $DOCKER image prune -af || true
+            $DOCKER container prune -f || true
+            $DOCKER network prune -f || true
+            sudo -n apt-get clean || true
+            $DOCKER system df || true
+
             # Rebuild and recreate services.
             $DOCKER compose up -d --build --force-recreate
             $DOCKER compose ps
